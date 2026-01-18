@@ -85,20 +85,26 @@ export const useChatStore = create<ChatState>((set, get) => ({
             if (msgError) throw msgError;
 
             // Group by chat
-            const chatsWithData: ChatWithParticipants[] = (participations as any[])?.map((p: any) => {
-                const chat = p.chats as unknown as Chat;
-                const participants = (allParticipants as any[])?.filter((ap: any) => ap.chat_id === chat.id) || [];
-                const lastMessage = (lastMessages as any[])?.find((m: any) => m.chat_id === chat.id);
+            const chatsWithData: any[] = (participations as any[])
+                ?.map((p: any) => {
+                    const chat = p.chats as unknown as Chat;
+                    if (!chat) return null;
 
-                return {
-                    ...chat,
-                    participants: participants.map((part: any) => ({
-                        ...part,
-                        user: part.user as User
-                    })),
-                    last_message: lastMessage as Message | undefined
-                };
-            }) || [];
+                    const participants = (allParticipants as any[])?.filter((ap: any) => ap.chat_id === chat.id) || [];
+                    const lastMessage = (lastMessages as any[])?.find((m: any) => m.chat_id === chat.id);
+
+                    return {
+                        ...chat,
+                        participants: participants.map((part: any) => ({
+                            ...part,
+                            user: part.user as User
+                        })),
+                        last_message: lastMessage as Message | undefined
+                    };
+                })
+                .filter(c => c !== null) || [];
+
+            console.log(`chatStore: fetchChats success, found ${chatsWithData.length} chats`);
 
             // Sort by last message time
             chatsWithData.sort((a, b) => {
@@ -107,7 +113,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
                 return new Date(bTime).getTime() - new Date(aTime).getTime();
             });
 
-            set({ chats: chatsWithData, isLoading: false });
+            set({ chats: chatsWithData as ChatWithParticipants[], isLoading: false });
         } catch (error) {
             console.error('Error fetching chats:', error);
             set({ isLoading: false });
