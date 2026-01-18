@@ -10,7 +10,7 @@ import type { User } from '../types';
 import './ChatWindow.css';
 
 export const ChatWindow: React.FC = () => {
-    const { id: chatId } = useParams<{ id: string }>();
+    const { chatId } = useParams<{ chatId: string }>();
     const navigate = useNavigate();
     const { user } = useAuthStore();
     const { messages, fetchMessages, sendMessage, addMessage, chats, fetchChats } = useChatStore();
