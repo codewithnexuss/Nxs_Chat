@@ -16,12 +16,14 @@ export const UsernameSelect: React.FC = () => {
     const [error, setError] = useState('');
 
     const signupData = sessionStorage.getItem('signupData');
+    const { session, fetchUser } = useAuthStore();
 
     useEffect(() => {
-        if (!signupData) {
+        // If not authenticated (no session) AND no signup data, go to signup
+        if (!session && !signupData) {
             navigate('/signup');
         }
-    }, [signupData, navigate]);
+    }, [session, signupData, navigate]);
 
     useEffect(() => {
         const checkUsername = async () => {
@@ -58,27 +60,59 @@ export const UsernameSelect: React.FC = () => {
         setError('');
 
         try {
-            const data = JSON.parse(signupData);
+            let userId: string;
+            let email: string;
+            let fullName: string;
+            let dob: string;
+            let gender: string;
 
-            // Create Supabase Auth account
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email: data.email,
-                password: data.password,
-            });
+            if (signupData) {
+                const data = JSON.parse(signupData);
+                // Create Supabase Auth account
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: data.email,
+                    password: data.password,
+                });
 
-            if (authError) throw authError;
-            if (!authData.user) throw new Error('Failed to create account');
+                if (authError) throw authError;
+                if (!authData.user) throw new Error('Failed to create account');
+
+                userId = authData.user.id;
+                email = data.email;
+                fullName = data.fullName;
+                dob = data.dateOfBirth;
+                gender = data.gender;
+
+                if (authData.session) {
+                    setSession({
+                        access_token: authData.session.access_token,
+                        user: { id: authData.user.id, email: authData.user.email! }
+                    });
+                }
+            } else if (session) {
+                // Already authenticated but missing profile
+                userId = session.user.id;
+                email = session.user.email;
+                // Since we don't have signupData, we'll use fallbacks or prompt for info
+                // But generally users coming here via "Complete Setup" might need these.
+                // For now, let's use the email and a temporary name.
+                fullName = email.split('@')[0];
+                dob = new Date().toISOString().split('T')[0];
+                gender = 'other';
+            } else {
+                throw new Error('No registration data found');
+            }
 
             // Create user profile
             const { error: profileError } = await supabase
                 .from('users')
                 .insert({
-                    id: authData.user.id,
-                    email: data.email,
-                    full_name: data.fullName,
+                    id: userId,
+                    email: email,
+                    full_name: fullName,
                     username: username.toLowerCase(),
-                    date_of_birth: data.dateOfBirth,
-                    gender: data.gender,
+                    date_of_birth: dob,
+                    gender: gender,
                 } as any);
 
             if (profileError) throw profileError;
@@ -86,17 +120,10 @@ export const UsernameSelect: React.FC = () => {
             // Clear session storage
             sessionStorage.removeItem('signupData');
 
-            // Auto-login
-            if (authData.session) {
-                setSession({
-                    access_token: authData.session.access_token,
-                    user: { id: authData.user.id, email: authData.user.email! }
-                });
-                // No need to await fetchUser or navigate manually.
-            } else {
-                // Email confirmation required
-                navigate('/', { state: { message: 'Please check your email to confirm your account' } });
-            }
+            // Fetch profile and navigate
+            await fetchUser(userId);
+            navigate('/home');
+
         } catch (err: any) {
             setError(err.message || 'An error occurred during registration');
         } finally {

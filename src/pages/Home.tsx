@@ -41,7 +41,7 @@ export const Home: React.FC = () => {
         }
     }, [user?.id, fetchChats]);
 
-    const filteredChats = chats.filter(chat => {
+    const filteredChats = (chats || []).filter(chat => {
         const otherParticipant = chat.participants.find(p => p.user_id !== user?.id);
         if (!otherParticipant) return false;
         const name = otherParticipant.user.full_name.toLowerCase();

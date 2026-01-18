@@ -55,11 +55,20 @@ export const useAuthStore = create<AuthState>()(
 
                 console.log(`authStore: fetchUser started for ${userId} on project ${SUPABASE_URL?.split('.')[0]}`);
                 try {
-                    const { data, error } = await supabase
-                        .from('users')
-                        .select('*')
-                        .eq('id', userId)
-                        .maybeSingle(); // Use maybeSingle to avoid 406 error on empty result
+                    // Create a timeout promise
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Fetch timeout')), 5000)
+                    );
+
+                    // Race the fetch against the timeout
+                    const { data, error } = await Promise.race([
+                        supabase
+                            .from('users')
+                            .select('*')
+                            .eq('id', userId)
+                            .maybeSingle(),
+                        timeoutPromise
+                    ]) as any;
 
                     if (error) {
                         console.error('authStore: fetchUser error:', error);

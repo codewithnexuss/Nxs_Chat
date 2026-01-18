@@ -6,8 +6,7 @@ import {
   RandomChat, StatusViewer, CreateStatus
 } from './pages';
 import {
-  AdminLogin, AdminLayout, AdminDashboard, UserManagement,
-  UserDetails, ContentModeration, AdminAnalytics, SystemSettings
+  AdminLogin, AdminLayout, AdminDashboard, UserManagement
 } from './pages/admin';
 import { AppLayout } from './components/layout';
 import { LoadingScreen } from './components/common';
@@ -16,9 +15,23 @@ import { useThemeStore } from './store/themeStore';
 import { supabase } from './lib/supabase';
 import './index.css';
 
-// Protected Route wrapper
+const PublicRoute = () => {
+  const { isAuthenticated, user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return <LoadingScreen message="Loading..." />;
+  }
+
+  // If authenticated AND has a profile, go to home
+  if (isAuthenticated && user) {
+    return <Navigate to="/home" replace />;
+  }
+
+  return <Outlet />;
+};
+
 const ProtectedRoute = () => {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, user, isLoading } = useAuthStore();
 
   if (isLoading) {
     return <LoadingScreen message="Loading..." />;
@@ -28,19 +41,10 @@ const ProtectedRoute = () => {
     return <Navigate to="/" replace />;
   }
 
-  return <Outlet />;
-};
-
-// Public Route wrapper (redirects to home if authenticated)
-const PublicRoute = () => {
-  const { isAuthenticated, isLoading } = useAuthStore();
-
-  if (isLoading) {
-    return <LoadingScreen message="Loading..." />;
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/home" replace />;
+  // If authenticated but no profile, send to username selection
+  // UNLESS already on the username select page (which is Public)
+  if (!user && window.location.pathname !== '/signup/username') {
+    return <Navigate to="/signup/username" replace />;
   }
 
   return <Outlet />;
@@ -124,14 +128,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
         <Route element={<PublicRoute />}>
           <Route path="/" element={<SignIn />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/signup/username" element={<UsernameSelect />} />
         </Route>
 
-        {/* Protected Routes with Layout */}
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/home" element={<Home />} />
@@ -139,27 +141,19 @@ function App() {
             <Route path="/status" element={<Status />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
-          {/* Full screen routes (outside layout) */}
-          <Route path="/chat/:id" element={<ChatWindow />} />
+          <Route path="/chat/:chatId" element={<ChatWindow />} />
           <Route path="/random-chat" element={<RandomChat />} />
           <Route path="/status/view/:id" element={<StatusViewer />} />
           <Route path="/status/view" element={<StatusViewer />} />
           <Route path="/status/create" element={<CreateStatus />} />
         </Route>
 
-        {/* Admin Routes */}
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin" element={<AdminLayout />}>
-          <Route path="dashboard" element={<AdminDashboard />} />
+          <Route index element={<AdminDashboard />} />
           <Route path="users" element={<UserManagement />} />
-          <Route path="users/:id" element={<UserDetails />} />
-          <Route path="moderation" element={<ContentModeration />} />
-          <Route path="analytics" element={<AdminAnalytics />} />
-          <Route path="settings" element={<SystemSettings />} />
-          <Route index element={<Navigate to="dashboard" replace />} />
         </Route>
 
-        {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
