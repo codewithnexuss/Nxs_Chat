@@ -1,0 +1,110 @@
+.search-page {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.random-chat-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.random-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    padding: var(--spacing-lg);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-xl);
+    cursor: pointer;
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.random-chat-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(14, 165, 233, 0.3);
+}
+
+.random-chat-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.random-chat-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+.random-chat-desc {
+    font-size: var(--font-size-sm);
+    opacity: 0.9;
+}
+
+.search-input-container {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.search-results {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.search-result-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+}
+
+.result-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.result-name {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-weight: 500;
+}
+
+.visibility-icon {
+    flex-shrink: 0;
+}
+
+.visibility-icon.public {
+    color: var(--success);
+}
+
+.visibility-icon.private {
+    color: var(--text-tertiary);
+}
+
+.result-username {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.result-bio {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.no-results {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    color: var(--text-secondary);
+}
