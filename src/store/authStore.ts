@@ -57,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     // Create a timeout promise
                     const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Fetch timeout')), 5000)
+                        setTimeout(() => reject(new Error('Fetch timeout')), 15000)
                     );
 
                     // Race the fetch against the timeout
