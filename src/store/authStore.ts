@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { supabase } from '../lib/supabase';
+import { SUPABASE_URL } from '../lib/config';
 import type { User } from '../types';
 
 interface AuthState {
@@ -50,10 +51,9 @@ export const useAuthStore = create<AuthState>()(
 
             fetchUser: async (userId) => {
                 const state = get();
-                // Prevent concurrent fetches for the same user
                 if (state.user?.id === userId) return;
 
-                console.log('authStore: fetchUser started for', userId);
+                console.log(`authStore: fetchUser started for ${userId} on project ${SUPABASE_URL?.split('.')[0]}`);
                 try {
                     const { data, error } = await supabase
                         .from('users')
