@@ -54,44 +54,62 @@ function App() {
     // Apply theme on mount
     applyTheme();
 
-    console.log('App: Setting up auth listener');
+    const initAuth = async () => {
+      console.log('App: initAuth manual check started');
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
 
-    // Listen for auth changes
+        if (session?.user) {
+          console.log('App: Session found on mount, fetching profile');
+          setSession({
+            access_token: session.access_token,
+            user: { id: session.user.id, email: session.user.email! }
+          });
+          await fetchUser(session.user.id);
+        } else {
+          console.log('App: No session found on mount');
+          setSession(null);
+          setUser(null);
+        }
+      } catch (err) {
+        console.error('App: initAuth error:', err);
+        setSession(null);
+        setUser(null);
+      } finally {
+        setLoading(false);
+        console.log('App: initAuth finished, setLoading(false)');
+      }
+    };
+
+    // Run initial check
+    initAuth();
+
+    // Listen for subsequent auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`App: auth event: ${event}`, session ? 'session found' : 'no session');
 
-        try {
+        // We only handle events that would change the state after initial load
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
-            console.log('App: Session identified, fetching user profile');
-            // Store session first (but it won't set isAuthenticated yet due to our authStore change)
             setSession({
               access_token: session.access_token,
               user: { id: session.user.id, email: session.user.email! }
             });
-
-            // Now fetch the full profile
             await fetchUser(session.user.id);
-            console.log('App: Auth cycle complete');
-          } else {
-            console.log('App: No session found, clearing auth state');
-            setSession(null);
-            setUser(null);
           }
-        } catch (err) {
-          console.error('App: Auth update error:', err);
-        } finally {
-          // Always clear loading after we've tried to handle the current session state
-          setLoading(false);
-          console.log('App: setLoading(false) called');
+        } else if (event === 'SIGNED_OUT') {
+          setSession(null);
+          setUser(null);
         }
       }
     );
 
     // Safety timeout: guaranteed to stop loading after 8 seconds if things hang
     const safetyTimer = setTimeout(() => {
-      const { isLoading } = useAuthStore.getState();
-      if (isLoading) {
+      const state = useAuthStore.getState();
+      if (state.isLoading) {
         console.warn('App: Safety timeout reached, forcing loading to false');
         setLoading(false);
       }

@@ -75,10 +75,22 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {isLoading || (isAuthenticated && !user) || (user && !chats.length && useChatStore.getState().isLoading) ? (
+                {isLoading || (isAuthenticated && !user && useAuthStore.getState().isLoading) || (user && !chats.length && useChatStore.getState().isLoading) ? (
                     <div className="chats-loading">
                         <div className="loader" />
                         <p>Loading chats...</p>
+                    </div>
+                ) : isAuthenticated && !user ? (
+                    <div className="chats-empty">
+                        <div className="empty-icon">👤</div>
+                        <h3>Profile not found</h3>
+                        <p>We couldn't find your profile. Please try completing your setup.</p>
+                        <button
+                            className="btn btn-primary"
+                            onClick={() => navigate('/signup/username')}
+                        >
+                            Complete Setup
+                        </button>
                     </div>
                 ) : filteredChats.length === 0 ? (
                     <div className="chats-empty">

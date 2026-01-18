@@ -43,7 +43,11 @@ export const Sidebar: React.FC = () => {
                         isOnline
                     />
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{user?.full_name || 'Loading profile...'}</span>
+                        <span className="sidebar-user-name">
+                            {useAuthStore.getState().isLoading
+                                ? 'Loading profile...'
+                                : user?.full_name || 'Guest User'}
+                        </span>
                         {user?.username && <span className="sidebar-user-username">@{user.username}</span>}
                     </div>
                 </div>

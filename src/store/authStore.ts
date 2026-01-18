@@ -49,27 +49,35 @@ export const useAuthStore = create<AuthState>()(
             },
 
             fetchUser: async (userId) => {
+                const state = get();
+                // Prevent concurrent fetches for the same user
+                if (state.user?.id === userId) return;
+
                 console.log('authStore: fetchUser started for', userId);
                 try {
                     const { data, error } = await supabase
                         .from('users')
                         .select('*')
                         .eq('id', userId)
-                        .single();
+                        .maybeSingle(); // Use maybeSingle to avoid 406 error on empty result
 
                     if (error) {
-                        console.error('authStore: fetchUser error from supabase:', error);
-                        // If no profile found, we might still want to be "authenticated" 
-                        // but redirect to username selection. For now, let's just clear user.
-                        set({ user: null, isAuthenticated: true }); // Still have session, but no profile
+                        console.error('authStore: fetchUser error:', error);
+                        set({ user: null, isAuthenticated: true, isLoading: false });
                         return;
                     }
-                    console.log('authStore: fetchUser success, user profile retrieved');
-                    set({ user: data as unknown as User, isAuthenticated: true });
+
+                    if (!data) {
+                        console.warn('authStore: fetchUser - no profile found for', userId);
+                        set({ user: null, isAuthenticated: true, isLoading: false });
+                        return;
+                    }
+
+                    console.log('authStore: fetchUser success');
+                    set({ user: data as unknown as User, isAuthenticated: true, isLoading: false });
                 } catch (error) {
                     console.error('authStore: fetchUser caught error:', error);
-                    // On error, we still want to move out of loading but maybe not authenticated
-                    set({ isAuthenticated: false });
+                    set({ isAuthenticated: false, isLoading: false });
                 }
             },
 
