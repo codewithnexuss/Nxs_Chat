@@ -47,83 +47,57 @@ const PublicRoute = () => {
 };
 
 function App() {
-  const { setSession, fetchUser, setLoading } = useAuthStore();
+  const { setSession, setUser, fetchUser, setLoading } = useAuthStore();
   const { applyTheme } = useThemeStore();
 
   useEffect(() => {
     // Apply theme on mount
     applyTheme();
 
-    // Check for existing session
-    const initAuth = async () => {
-      console.log('App: initAuth started');
-      try {
-        const state = useAuthStore.getState();
-        const persistedSession = state.session;
-        console.log('App: persistedSession from state:', persistedSession ? 'exists' : 'null');
-
-        if (persistedSession) {
-          const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-          console.log('App: supabase.auth.getSession result:', currentSession ? 'session exists' : 'no session', error ? `error: ${error.message}` : '');
-
-          if (error || !currentSession) {
-            setSession(null);
-          } else {
-            await fetchUser(currentSession.user.id);
-          }
-        } else {
-          console.log('App: no persisted session found, clearing loading');
-          // If no session is found, we must still clear the loading state
-          setSession(null);
-        }
-      } catch (err) {
-        console.error('App: Auth init error:', err);
-        setSession(null);
-      } finally {
-        console.log('App: initAuth finished, calling setLoading(false)');
-        setLoading(false);
-      }
-    };
-
-    // Safety timeout: guaranteed to stop loading after 5 seconds if initAuth hangs
-    const safetyTimer = setTimeout(() => {
-      console.warn('App: Safety timeout reached, forcing loading to false');
-      setLoading(false);
-    }, 5000);
-
-    // Small delay to allow zustand to hydrate from localStorage
-    const timer = setTimeout(() => {
-      console.log('App: Execution of initAuth after 100ms hydration delay');
-      initAuth();
-    }, 100);
+    console.log('App: Setting up auth listener');
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`App: auth event: ${event}`, session ? 'session found' : 'no session');
 
-        if (event === 'INITIAL_SESSION') {
-          console.log('App: handled INITIAL_SESSION, clearing loading if no session');
-          if (!session) setLoading(false);
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          setSession({
-            access_token: session.access_token,
-            user: { id: session.user.id, email: session.user.email! }
-          });
-          await fetchUser(session.user.id);
+        try {
+          if (session?.user) {
+            console.log('App: Session identified, fetching user profile');
+            // Store session first (but it won't set isAuthenticated yet due to our authStore change)
+            setSession({
+              access_token: session.access_token,
+              user: { id: session.user.id, email: session.user.email! }
+            });
+
+            // Now fetch the full profile
+            await fetchUser(session.user.id);
+            console.log('App: Auth cycle complete');
+          } else {
+            console.log('App: No session found, clearing auth state');
+            setSession(null);
+            setUser(null);
+          }
+        } catch (err) {
+          console.error('App: Auth update error:', err);
+        } finally {
+          // Always clear loading after we've tried to handle the current session state
           setLoading(false);
-          clearTimeout(safetyTimer); // Clear safety timer on success
-        } else if (event === 'SIGNED_OUT') {
-          console.log('App: cleaning session due to sign out');
-          setSession(null);
-          setLoading(false);
-          clearTimeout(safetyTimer); // Clear safety timer on success
+          console.log('App: setLoading(false) called');
         }
       }
     );
 
+    // Safety timeout: guaranteed to stop loading after 8 seconds if things hang
+    const safetyTimer = setTimeout(() => {
+      const { isLoading } = useAuthStore.getState();
+      if (isLoading) {
+        console.warn('App: Safety timeout reached, forcing loading to false');
+        setLoading(false);
+      }
+    }, 8000);
+
     return () => {
-      clearTimeout(timer);
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };

@@ -11,7 +11,7 @@ import './Home.css';
 
 export const Home: React.FC = () => {
     const navigate = useNavigate();
-    const { user } = useAuthStore();
+    const { user, isAuthenticated } = useAuthStore();
     const { chats, fetchChats, isLoading } = useChatStore();
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,7 +75,7 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {isLoading || (user && !chats.length && useChatStore.getState().isLoading) || (!user && useAuthStore.getState().isLoading) ? (
+                {isLoading || (isAuthenticated && !user) || (user && !chats.length && useChatStore.getState().isLoading) ? (
                     <div className="chats-loading">
                         <div className="loader" />
                         <p>Loading chats...</p>

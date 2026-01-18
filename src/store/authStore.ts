@@ -28,7 +28,7 @@ export const useAuthStore = create<AuthState>()(
 
             setUser: (user) => set({ user, isAuthenticated: !!user }),
 
-            setSession: (session) => set({ session, isAuthenticated: !!session }),
+            setSession: (session) => set({ session }),
 
             setLoading: (isLoading) => set({ isLoading }),
 
@@ -59,7 +59,10 @@ export const useAuthStore = create<AuthState>()(
 
                     if (error) {
                         console.error('authStore: fetchUser error from supabase:', error);
-                        throw error;
+                        // If no profile found, we might still want to be "authenticated" 
+                        // but redirect to username selection. For now, let's just clear user.
+                        set({ user: null, isAuthenticated: true }); // Still have session, but no profile
+                        return;
                     }
                     console.log('authStore: fetchUser success, user profile retrieved');
                     set({ user: data as unknown as User, isAuthenticated: true });
