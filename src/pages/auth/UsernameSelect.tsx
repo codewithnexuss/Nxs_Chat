@@ -8,7 +8,7 @@ import './Auth.css';
 
 export const UsernameSelect: React.FC = () => {
     const navigate = useNavigate();
-    const { fetchUser, setSession } = useAuthStore();
+    const { setSession } = useAuthStore();
     const [username, setUsername] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
@@ -92,8 +92,7 @@ export const UsernameSelect: React.FC = () => {
                     access_token: authData.session.access_token,
                     user: { id: authData.user.id, email: authData.user.email! }
                 });
-                await fetchUser(authData.user.id);
-                navigate('/home');
+                // No need to await fetchUser or navigate manually.
             } else {
                 // Email confirmation required
                 navigate('/', { state: { message: 'Please check your email to confirm your account' } });

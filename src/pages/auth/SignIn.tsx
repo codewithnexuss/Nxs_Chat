@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { MessageCircle, Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '../../components/common';
 import { supabase } from '../../lib/supabase';
@@ -7,8 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import './Auth.css';
 
 export const SignIn: React.FC = () => {
-    const navigate = useNavigate();
-    const { fetchUser, setSession } = useAuthStore();
+    const { setSession } = useAuthStore();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -40,8 +39,8 @@ export const SignIn: React.FC = () => {
                     access_token: data.session.access_token,
                     user: { id: data.user.id, email: data.user.email! }
                 });
-                await fetchUser(data.user.id);
-                navigate('/home');
+                // No need to await fetchUser or navigate manually.
+                // onAuthStateChange in App.tsx and PublicRoute handles this.
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred during sign in');
