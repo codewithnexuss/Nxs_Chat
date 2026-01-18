@@ -77,8 +77,10 @@ export const ChatWindow: React.FC = () => {
         // Subscribe to new messages
         if (!chatId) return;
 
+        console.log('ChatWindow: Subscribing to real-time messages for chat:', chatId);
+
         const channel = supabase
-            .channel(`chat:${chatId}`)
+            .channel(`chat_messages:${chatId}`)
             .on(
                 'postgres_changes',
                 {
@@ -88,7 +90,13 @@ export const ChatWindow: React.FC = () => {
                     filter: `chat_id=eq.${chatId}`,
                 },
                 async (payload) => {
+                    console.log('ChatWindow: New message received via real-time:', payload.new);
+
                     if (payload.new.sender_id !== user?.id) {
+                        // Check if message already exists in state to avoid duplicates
+                        const exists = useChatStore.getState().messages.some(m => m.id === payload.new.id);
+                        if (exists) return;
+
                         // Fetch the sender info
                         const { data } = await supabase
                             .from('users')
@@ -105,15 +113,22 @@ export const ChatWindow: React.FC = () => {
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('ChatWindow: Subscription status:', status);
+            });
 
         return () => {
+            console.log('ChatWindow: Unsubscribing from real-time messages');
             supabase.removeChannel(channel);
         };
     }, [chatId, user?.id, addMessage]);
 
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        // Scroll to bottom with a slight delay to ensure content is rendered
+        const timer = setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+        return () => clearTimeout(timer);
     }, [messages]);
 
     const handleSend = async () => {
@@ -196,7 +211,7 @@ export const ChatWindow: React.FC = () => {
                         >
                             <p>{msg.content}</p>
                             <span className="message-time">
-                                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(msg.created_at + 'Z'), { addSuffix: true })}
                             </span>
                         </div>
                     ))
