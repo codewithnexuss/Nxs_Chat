@@ -13,7 +13,7 @@ export const ChatWindow: React.FC = () => {
     const { id: chatId } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { user } = useAuthStore();
-    const { messages, fetchMessages, sendMessage, addMessage, chats } = useChatStore();
+    const { messages, fetchMessages, sendMessage, addMessage, chats, fetchChats } = useChatStore();
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -25,7 +25,7 @@ export const ChatWindow: React.FC = () => {
         if (chatId) {
             fetchMessages(chatId);
 
-            // Find other user from chat participants
+            // Fetch chat details if not in store
             const chat = chats.find(c => c.id === chatId);
             if (chat) {
                 const participant = chat.participants.find(p => p.user_id !== user?.id);
@@ -35,9 +35,12 @@ export const ChatWindow: React.FC = () => {
                 if (other && user) {
                     checkBlockStatus(user.id, other.id);
                 }
+            } else if (user?.id) {
+                // If chat not found in store, fetch chats to populate it
+                fetchChats(user.id);
             }
         }
-    }, [chatId, fetchMessages, chats, user?.id]);
+    }, [chatId, fetchMessages, fetchChats, chats, user?.id]);
 
     const checkBlockStatus = async (blockerId: string, blockedId: string) => {
         const { data } = await supabase
@@ -211,7 +214,13 @@ export const ChatWindow: React.FC = () => {
                         >
                             <p>{msg.content}</p>
                             <span className="message-time">
-                                {formatDistanceToNow(new Date(msg.created_at + 'Z'), { addSuffix: true })}
+                                {(() => {
+                                    try {
+                                        return formatDistanceToNow(new Date(msg.created_at), { addSuffix: true });
+                                    } catch (e) {
+                                        return 'Just now';
+                                    }
+                                })()}
                             </span>
                         </div>
                     ))
