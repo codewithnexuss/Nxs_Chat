@@ -28,6 +28,8 @@ export const AdminLogin: React.FC = () => {
         setError('');
 
         try {
+            console.log('AdminLogin: Attempting login for username:', formData.username);
+
             // Check admin credentials
             const { data: admin, error: adminError } = await supabase
                 .from('admins')
@@ -36,20 +38,28 @@ export const AdminLogin: React.FC = () => {
                 .eq('is_active', true)
                 .single();
 
+            console.log('AdminLogin: DB lookup result:', { admin: !!admin, error: adminError });
+
             if (adminError || !admin) {
                 throw new Error('Invalid credentials');
             }
 
             // Simple password check (in production, use proper hashing)
             if (admin.password_hash !== formData.password) {
+                console.log('AdminLogin: Password mismatch');
                 throw new Error('Invalid credentials');
             }
 
-            // Update last login
-            await supabase
+            console.log('AdminLogin: Login successful, updating last_login');
+
+            // Update last login (non-blocking)
+            supabase
                 .from('admins')
                 .update({ last_login: new Date().toISOString() })
-                .eq('id', admin.id);
+                .eq('id', admin.id)
+                .then(({ error }) => {
+                    if (error) console.error('AdminLogin: Failed to update last_login:', error);
+                });
 
             // Store admin session
             sessionStorage.setItem('adminSession', JSON.stringify({
@@ -58,10 +68,13 @@ export const AdminLogin: React.FC = () => {
                 role: admin.role,
             }));
 
+            console.log('AdminLogin: Session stored, navigating to dashboard');
             navigate('/admin/dashboard');
         } catch (err: any) {
+            console.error('AdminLogin: Catch error:', err);
             setError(err.message || 'Login failed');
         } finally {
+            console.log('AdminLogin: Finally reached');
             setIsLoading(false);
         }
     };
