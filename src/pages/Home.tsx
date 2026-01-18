@@ -17,6 +17,7 @@ export const Home: React.FC = () => {
 
     useEffect(() => {
         if (user?.id) {
+            console.log('Home: user.id identified, fetching chats for:', user.id);
             fetchChats(user.id);
 
             // Subscribe to chat-related changes
@@ -74,7 +75,7 @@ export const Home: React.FC = () => {
                     </div>
                 </div>
 
-                {isLoading ? (
+                {isLoading || (user && !chats.length && useChatStore.getState().isLoading) || (!user && useAuthStore.getState().isLoading) ? (
                     <div className="chats-loading">
                         <div className="loader" />
                         <p>Loading chats...</p>

@@ -38,13 +38,13 @@ export const Sidebar: React.FC = () => {
                 <div className="sidebar-user">
                     <Avatar
                         src={user?.profile_picture}
-                        name={user?.full_name}
+                        name={user?.full_name || 'User'}
                         size="md"
                         isOnline
                     />
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{user?.full_name}</span>
-                        <span className="sidebar-user-username">@{user?.username}</span>
+                        <span className="sidebar-user-name">{user?.full_name || 'Loading profile...'}</span>
+                        {user?.username && <span className="sidebar-user-username">@{user.username}</span>}
                     </div>
                 </div>
                 <button className="btn btn-ghost btn-icon" onClick={signOut} title="Logout">
