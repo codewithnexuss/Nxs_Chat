@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageCircle, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '../../components/common';
 import './Auth.css';
 
@@ -26,8 +26,13 @@ export const SignUp: React.FC = () => {
         confirmPassword: '',
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+        setError('');
+    };
+
+    const handleGenderSelect = (gender: string) => {
+        setFormData({ ...formData, gender });
         setError('');
     };
 
@@ -51,7 +56,6 @@ export const SignUp: React.FC = () => {
             return;
         }
 
-        // Store data and navigate to username selection
         sessionStorage.setItem('signupData', JSON.stringify(formData));
         navigate('/signup/username');
     };
@@ -61,58 +65,62 @@ export const SignUp: React.FC = () => {
             <div className="auth-card">
                 <div className="auth-header">
                     <div className="auth-logo">
-                        <MessageCircle size={40} />
+                        <MessageSquare size={32} />
                     </div>
-                    <h1>Create Account</h1>
-                    <p>Step 1 of 2: Basic Information</p>
+                    <h1>Create your account</h1>
+                    <p>Step 1: Basic Information</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
                     {error && <div className="auth-error">{error}</div>}
 
-                    <Input
-                        type="text"
-                        name="fullName"
-                        label="Full Name"
-                        placeholder="Enter your full name"
-                        value={formData.fullName}
-                        onChange={handleChange}
-                        required
-                    />
+                    <div className="input-with-icon">
+                        <Input
+                            type="text"
+                            name="fullName"
+                            label="Full Name"
+                            placeholder="e.g. Alex Smith"
+                            value={formData.fullName}
+                            onChange={handleChange}
+                            required
+                        />
+                    </div>
 
                     <Input
                         type="email"
                         name="email"
-                        label="Email"
-                        placeholder="Enter your email"
+                        label="Email Address"
+                        placeholder="name@example.com"
                         value={formData.email}
                         onChange={handleChange}
                         required
                     />
 
-                    <Input
-                        type="date"
-                        name="dateOfBirth"
-                        label="Date of Birth"
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                        required
-                    />
-
-                    <div className="input-group">
-                        <label className="input-label">Gender</label>
-                        <select
-                            name="gender"
-                            className="input"
-                            value={formData.gender}
+                    <div className="grid-2">
+                        <Input
+                            type="date"
+                            name="dateOfBirth"
+                            label="Date of Birth"
+                            value={formData.dateOfBirth}
                             onChange={handleChange}
                             required
-                        >
-                            <option value="">Select gender</option>
-                            <option value="male">Male</option>
-                            <option value="female">Female</option>
-                            <option value="other">Other</option>
-                        </select>
+                        />
+
+                        <div className="input-group">
+                            <label className="input-label">Gender</label>
+                            <div className="gender-toggle-group">
+                                {['Male', 'Female', 'Other'].map((g) => (
+                                    <button
+                                        key={g}
+                                        type="button"
+                                        className={`gender-btn ${formData.gender === g.toLowerCase() ? 'active' : ''}`}
+                                        onClick={() => handleGenderSelect(g.toLowerCase())}
+                                    >
+                                        {g}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="password-field">
@@ -120,7 +128,7 @@ export const SignUp: React.FC = () => {
                             type={showPassword ? 'text' : 'password'}
                             name="password"
                             label="Password"
-                            placeholder="Min 8 chars, 1 uppercase, 1 number"
+                            placeholder="At least 8 characters"
                             value={formData.password}
                             onChange={handleChange}
                             required
@@ -138,24 +146,25 @@ export const SignUp: React.FC = () => {
                         type="password"
                         name="confirmPassword"
                         label="Confirm Password"
-                        placeholder="Re-enter your password"
+                        placeholder="Repeat your password"
                         value={formData.confirmPassword}
                         onChange={handleChange}
                         required
                     />
 
                     <Button type="submit" className="w-full" size="lg">
-                        Continue
+                        Next Step →
                     </Button>
                 </form>
 
                 <div className="auth-footer">
                     <p>
                         Already have an account?{' '}
-                        <Link to="/">Sign In</Link>
+                        <Link to="/">LOGIN</Link>
                     </p>
                 </div>
             </div>
         </div>
     );
 };
+

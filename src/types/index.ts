@@ -43,10 +43,13 @@ export interface Message {
     id: string;
     chat_id: string;
     sender_id: string;
-    message_type: 'text' | 'image' | 'emoji';
+    message_type: 'text' | 'image' | 'emoji' | 'file' | 'video';
     content: string;
     image_url: string | null;
+    file_url?: string | null;
+    parent_id: string | null;
     is_read: boolean;
+    is_deleted: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -104,6 +107,7 @@ export interface ChatWithParticipants extends Chat {
 
 export interface MessageWithSender extends Message {
     sender: User;
+    reply_to?: MessageWithSender | null;
 }
 
 export interface StatusWithUser extends Status {

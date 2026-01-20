@@ -15,5 +15,6 @@
     .main-content {
         margin-left: var(--sidebar-width);
         padding-bottom: 0;
+        background: var(--bg-primary);
     }
 }

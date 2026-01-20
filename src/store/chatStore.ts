@@ -13,9 +13,13 @@ interface ChatState {
     setActiveChat: (chat: ChatWithParticipants | null) => void;
     setMessages: (messages: MessageWithSender[]) => void;
     addMessage: (message: MessageWithSender) => void;
+    updateMessage: (message: MessageWithSender) => void;
+    removeMessage: (messageId: string) => void;
     fetchChats: (userId: string) => Promise<void>;
     fetchMessages: (chatId: string) => Promise<void>;
-    sendMessage: (chatId: string, senderId: string, content: string, type?: 'text' | 'image' | 'emoji') => Promise<void>;
+    sendMessage: (chatId: string, senderId: string, content: string, type?: 'text' | 'image' | 'emoji' | 'file' | 'video', imageUrl?: string, fileUrl?: string, parentId?: string) => Promise<void>;
+    deleteMessage: (messageId: string) => Promise<void>;
+    editMessage: (messageId: string, content: string) => Promise<void>;
     createChat: (userId: string, participantId: string) => Promise<Chat>;
     markMessagesAsRead: (chatId: string, userId: string) => Promise<void>;
 }
@@ -33,7 +37,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     setMessages: (messages) => set({ messages }),
 
     addMessage: (message) => set((state) => ({
-        messages: [...state.messages, message]
+        messages: state.messages.some(m => m.id === message.id) ? state.messages : [...state.messages, message]
+    })),
+
+    updateMessage: (updatedMessage) => set((state) => ({
+        messages: state.messages.map(m => m.id === updatedMessage.id ? { ...m, ...updatedMessage } : m)
+    })),
+
+    removeMessage: (messageId) => set((state) => ({
+        messages: state.messages.filter(m => m.id !== messageId)
     })),
 
     fetchChats: async (userId) => {
@@ -133,18 +145,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             if (error) throw error;
 
-            set({
-                messages: ((data || []) as any[]).map((m: any) => ({
+            const messages = (data || []) as any[];
+            const processedMessages = messages.map((m: any) => {
+                const msg = {
                     ...m,
-                    sender: m.sender as User
-                })) as MessageWithSender[]
+                    sender: m.sender as User,
+                    reply_to: m.parent_id ? messages.find(prevM => prevM.id === m.parent_id) : null
+                };
+                return msg;
             });
+
+            set({ messages: processedMessages as MessageWithSender[] });
         } catch (error) {
             console.error('Error fetching messages:', error);
         }
     },
 
-    sendMessage: async (chatId, senderId, content, type = 'text') => {
+    sendMessage: async (chatId, senderId, content, type = 'text', imageUrl, fileUrl, parentId) => {
         try {
             const { data, error } = await supabase
                 .from('messages')
@@ -152,7 +169,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
                     chat_id: chatId,
                     sender_id: senderId,
                     content,
-                    message_type: type
+                    message_type: type,
+                    image_url: imageUrl,
+                    file_url: fileUrl,
+                    parent_id: parentId
                 } as any)
                 .select(`
           *,
@@ -164,12 +184,45 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
             const message = {
                 ...(data as any),
-                sender: (data as any).sender as User
+                sender: (data as any).sender as User,
+                reply_to: parentId ? get().messages.find(m => m.id === parentId) : null
             } as MessageWithSender;
 
             get().addMessage(message);
         } catch (error) {
             console.error('Error sending message:', error);
+            throw error;
+        }
+    },
+
+    deleteMessage: async (messageId) => {
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .update({ is_deleted: true, content: 'This message was deleted' } as any)
+                .eq('id', messageId);
+
+            if (error) throw error;
+
+            // Local state is updated via Postgres change listener
+        } catch (error) {
+            console.error('Error deleting message:', error);
+            throw error;
+        }
+    },
+
+    editMessage: async (messageId, content) => {
+        try {
+            const { error } = await supabase
+                .from('messages')
+                .update({ content, updated_at: new Date().toISOString() } as any)
+                .eq('id', messageId);
+
+            if (error) throw error;
+
+            // Local state is updated via Postgres change listener
+        } catch (error) {
+            console.error('Error editing message:', error);
             throw error;
         }
     },

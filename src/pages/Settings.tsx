@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import {
     User, Moon, Sun, Lock, Eye, LogOut,
-    ChevronRight, Camera, Check
+    Camera
 } from 'lucide-react';
-import { Avatar, Button, Input, Textarea, Modal } from '../components/common';
+import { Avatar, Button, Input, Textarea } from '../components/common';
 import { Header } from '../components/layout';
 import { useAuthStore } from '../store/authStore';
 import { useThemeStore } from '../store/themeStore';
@@ -13,33 +13,21 @@ import './Settings.css';
 export const Settings: React.FC = () => {
     const { user, updateUser, signOut } = useAuthStore();
     const { mode, toggleMode } = useThemeStore();
-    const [activeSection, setActiveSection] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'profile' | 'privacy' | 'appearance'>('profile');
     const [isSaving, setIsSaving] = useState(false);
 
     // Form states
     const [fullName, setFullName] = useState(user?.full_name || '');
     const [bio, setBio] = useState(user?.bio || '');
-    const [isPublic, setIsPublic] = useState(user?.is_profile_public ?? true);
+    const [username] = useState(user?.username || '');
 
     const handleSaveProfile = async () => {
         setIsSaving(true);
         try {
             await updateUser({ full_name: fullName, bio });
-            setActiveSection(null);
+            alert('Profile updated successfully!'); // Replace with toast later
         } catch (err) {
             console.error('Error saving profile:', err);
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    const handleSavePrivacy = async () => {
-        setIsSaving(true);
-        try {
-            await updateUser({ is_profile_public: isPublic });
-            setActiveSection(null);
-        } catch (err) {
-            console.error('Error saving privacy:', err);
         } finally {
             setIsSaving(false);
         }
@@ -62,184 +50,189 @@ export const Settings: React.FC = () => {
                 .getPublicUrl(fileName);
 
             await updateUser({ profile_picture: publicUrl });
-            alert('Profile picture updated successfully!');
         } catch (err: any) {
             console.error('Error uploading image:', err);
             alert(`Failed to upload image: ${err.message || 'Unknown error'}`);
         }
     };
 
+    const renderProfileTab = () => (
+        <div className="tab-content fade-in">
+            <div className="profile-edit-section">
+                <div className="profile-avatar-large">
+                    <Avatar
+                        src={user?.profile_picture}
+                        name={user?.full_name}
+                        size="2xl"
+                    />
+                    <label className="avatar-edit-overlay">
+                        <Camera size={20} />
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            hidden
+                        />
+                    </label>
+                </div>
+
+                <div className="settings-form">
+                    <div className="form-group">
+                        <label>Full Name</label>
+                        <Input
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="Your full name"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>Username</label>
+                        <div className="input-with-icon">
+                            <span className="input-prefix">@</span>
+                            <Input
+                                value={username}
+                                disabled
+                                className="pl-8"
+                            />
+                        </div>
+                        <p className="input-hint">Username cannot be changed regularly.</p>
+                    </div>
+
+                    <div className="form-group">
+                        <label>Bio</label>
+                        <Textarea
+                            value={bio}
+                            onChange={(e) => setBio(e.target.value)}
+                            placeholder="Tell us a little about yourself"
+                            rows={4}
+                        />
+                    </div>
+
+                    <div className="form-actions">
+                        <Button
+                            onClick={handleSaveProfile}
+                            isLoading={isSaving}
+                            disabled={!fullName.trim()}
+                        >
+                            Save Changes
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderPrivacyTab = () => (
+        <div className="tab-content fade-in">
+            <div className="privacy-settings">
+                <div
+                    className={`privacy-option-card ${user?.is_profile_public ? 'active' : ''}`}
+                    onClick={() => updateUser({ is_profile_public: true })}
+                >
+                    <div className="privacy-icon-wrapper public">
+                        <Eye size={24} />
+                    </div>
+                    <div className="privacy-info">
+                        <h4>Public Profile</h4>
+                        <p>Everyone can see your profile, bio, and stories.</p>
+                    </div>
+                    <div className="radio-circle">
+                        {user?.is_profile_public && <div className="radio-fill" />}
+                    </div>
+                </div>
+
+                <div
+                    className={`privacy-option-card ${!user?.is_profile_public ? 'active' : ''}`}
+                    onClick={() => updateUser({ is_profile_public: false })}
+                >
+                    <div className="privacy-icon-wrapper private">
+                        <Lock size={24} />
+                    </div>
+                    <div className="privacy-info">
+                        <h4>Private Account</h4>
+                        <p>Only your name and username are visible to non-contacts.</p>
+                    </div>
+                    <div className="radio-circle">
+                        {!user?.is_profile_public && <div className="radio-fill" />}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderAppearanceTab = () => (
+        <div className="tab-content fade-in">
+            <div className="appearance-options">
+                <div className="theme-card" onClick={toggleMode}>
+                    <div className={`theme-preview ${mode === 'dark' ? 'dark' : 'light'}`}>
+                        <div className="preview-nav"></div>
+                        <div className="preview-content">
+                            <div className="preview-bubble received"></div>
+                            <div className="preview-bubble sent"></div>
+                        </div>
+                    </div>
+                    <div className="theme-card-info">
+                        <span>{mode === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+                        <div className={`toggle-switch small ${mode === 'dark' ? 'active' : ''}`}>
+                            <div className="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
     return (
         <div className="settings-page">
             <Header title="Settings" />
 
-            <div className="page-content">
+            <div className="page-content settings-layout">
                 <div className="page-header-desktop">
                     <h2>Settings</h2>
                 </div>
 
-                {/* Profile Card */}
-                <div className="settings-profile-card">
-                    <div className="profile-avatar-container">
-                        <Avatar
-                            src={user?.profile_picture}
-                            name={user?.full_name}
-                            size="2xl"
-                        />
-                        <label className="avatar-upload-btn">
-                            <Camera size={16} />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                hidden
-                            />
-                        </label>
-                    </div>
-                    <div className="profile-info">
-                        <h3>{user?.full_name}</h3>
-                        <p>@{user?.username}</p>
-                    </div>
-                </div>
-
-                {/* Settings Sections */}
-                <div className="settings-section">
-                    <h4 className="section-title">Account</h4>
-
-                    <button
-                        className="settings-item"
-                        onClick={() => setActiveSection('profile')}
-                    >
-                        <User size={20} />
-                        <span>Edit Profile</span>
-                        <ChevronRight size={18} />
-                    </button>
-
-                    <button
-                        className="settings-item"
-                        onClick={() => setActiveSection('privacy')}
-                    >
-                        <Lock size={20} />
-                        <span>Privacy</span>
-                        <ChevronRight size={18} />
-                    </button>
-                </div>
-
-                <div className="settings-section">
-                    <h4 className="section-title">Appearance</h4>
-
-                    <div className="settings-item theme-item">
-                        <div className="theme-label">
-                            {mode === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
-                            <span>Dark Mode</span>
-                        </div>
+                <div className="settings-container">
+                    {/* Settings Sidebar */}
+                    <div className="settings-sidebar">
                         <button
-                            className={`toggle-switch ${mode === 'dark' ? 'active' : ''}`}
-                            onClick={toggleMode}
+                            className={`settings-nav-item ${activeTab === 'profile' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('profile')}
                         >
-                            <span className="toggle-knob" />
+                            <User size={20} />
+                            <span>Edit Profile</span>
                         </button>
-                    </div>
-                </div>
+                        <button
+                            className={`settings-nav-item ${activeTab === 'privacy' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('privacy')}
+                        >
+                            <Lock size={20} />
+                            <span>Privacy & Security</span>
+                        </button>
+                        <button
+                            className={`settings-nav-item ${activeTab === 'appearance' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('appearance')}
+                        >
+                            {mode === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+                            <span>Appearance</span>
+                        </button>
 
-                <div className="settings-section">
-                    <button className="settings-item logout-item" onClick={signOut}>
-                        <LogOut size={20} />
-                        <span>Logout</span>
-                    </button>
+                        <div className="settings-sidebar-footer">
+                            <button className="settings-nav-item logout" onClick={signOut}>
+                                <LogOut size={20} />
+                                <span>Log Out</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Settings Content */}
+                    <div className="settings-main-content">
+                        {activeTab === 'profile' && renderProfileTab()}
+                        {activeTab === 'privacy' && renderPrivacyTab()}
+                        {activeTab === 'appearance' && renderAppearanceTab()}
+                    </div>
                 </div>
             </div>
-
-            {/* Edit Profile Modal */}
-            <Modal
-                isOpen={activeSection === 'profile'}
-                onClose={() => setActiveSection(null)}
-                title="Edit Profile"
-                footer={
-                    <>
-                        <Button variant="ghost" onClick={() => setActiveSection(null)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSaveProfile} isLoading={isSaving}>
-                            Save
-                        </Button>
-                    </>
-                }
-            >
-                <div className="edit-form">
-                    <Input
-                        label="Full Name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                    />
-                    <Textarea
-                        label="Bio"
-                        value={bio}
-                        onChange={(e) => setBio(e.target.value)}
-                        placeholder="Tell us about yourself..."
-                    />
-                    <div className="input-group">
-                        <label className="input-label">Email</label>
-                        <input className="input" value={user?.email} disabled />
-                    </div>
-                    <div className="input-group">
-                        <label className="input-label">Username</label>
-                        <input className="input" value={`@${user?.username}`} disabled />
-                        <span className="text-xs text-muted">Username can be changed once every 5 days</span>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* Privacy Modal */}
-            <Modal
-                isOpen={activeSection === 'privacy'}
-                onClose={() => setActiveSection(null)}
-                title="Privacy Settings"
-                footer={
-                    <>
-                        <Button variant="ghost" onClick={() => setActiveSection(null)}>
-                            Cancel
-                        </Button>
-                        <Button onClick={handleSavePrivacy} isLoading={isSaving}>
-                            Save
-                        </Button>
-                    </>
-                }
-            >
-                <div className="privacy-options">
-                    <p className="privacy-description">
-                        Choose who can see your profile details
-                    </p>
-
-                    <button
-                        className={`privacy-option ${isPublic ? 'active' : ''}`}
-                        onClick={() => setIsPublic(true)}
-                    >
-                        <div className="privacy-option-content">
-                            <Eye size={20} />
-                            <div>
-                                <strong>Public</strong>
-                                <p>Anyone can see your bio and full profile</p>
-                            </div>
-                        </div>
-                        {isPublic && <Check size={20} className="check-icon" />}
-                    </button>
-
-                    <button
-                        className={`privacy-option ${!isPublic ? 'active' : ''}`}
-                        onClick={() => setIsPublic(false)}
-                    >
-                        <div className="privacy-option-content">
-                            <Lock size={20} />
-                            <div>
-                                <strong>Private</strong>
-                                <p>Only your name and username are visible</p>
-                            </div>
-                        </div>
-                        {!isPublic && <Check size={20} className="check-icon" />}
-                    </button>
-                </div>
-            </Modal>
         </div>
     );
 };

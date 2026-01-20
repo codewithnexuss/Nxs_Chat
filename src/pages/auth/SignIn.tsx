@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, Eye, EyeOff } from 'lucide-react';
+import { MessageSquare, Eye, EyeOff } from 'lucide-react';
 import { Button, Input } from '../../components/common';
 import { supabase } from '../../lib/supabase';
 import { useAuthStore } from '../../store/authStore';
@@ -39,8 +39,6 @@ export const SignIn: React.FC = () => {
                     access_token: data.session.access_token,
                     user: { id: data.user.id, email: data.user.email! }
                 });
-                // No need to await fetchUser or navigate manually.
-                // onAuthStateChange in App.tsx and PublicRoute handles this.
             }
         } catch (err: any) {
             setError(err.message || 'An error occurred during sign in');
@@ -54,10 +52,10 @@ export const SignIn: React.FC = () => {
             <div className="auth-card">
                 <div className="auth-header">
                     <div className="auth-logo">
-                        <MessageCircle size={40} />
+                        <MessageSquare size={32} />
                     </div>
                     <h1>Welcome Back</h1>
-                    <p>Sign in to continue to NXS Chat</p>
+                    <p>Enter your credentials to access your account</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
@@ -66,30 +64,39 @@ export const SignIn: React.FC = () => {
                     <Input
                         type="email"
                         name="email"
-                        label="Email"
-                        placeholder="Enter your email"
+                        label="Email Address"
+                        placeholder="name@example.com"
                         value={formData.email}
                         onChange={handleChange}
                         required
                     />
 
                     <div className="password-field">
-                        <Input
-                            type={showPassword ? 'text' : 'password'}
-                            name="password"
-                            label="Password"
-                            placeholder="Enter your password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            required
-                        />
-                        <button
-                            type="button"
-                            className="password-toggle"
-                            onClick={() => setShowPassword(!showPassword)}
-                        >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
+                        <div className="flex justify-between items-center mb-1">
+                            <label className="input-label">Password</label>
+                            <Link to="/forgot-password" style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+                                Forgot Password?
+                            </Link>
+                        </div>
+                        <div className="relative">
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                className="input"
+                                placeholder="••••••••"
+                                value={formData.password}
+                                onChange={handleChange}
+                                required
+                            />
+                            <button
+                                type="button"
+                                className="password-toggle"
+                                style={{ top: '50%', transform: 'translateY(-50%)' }}
+                                onClick={() => setShowPassword(!showPassword)}
+                            >
+                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            </button>
+                        </div>
                     </div>
 
                     <Button
@@ -98,17 +105,18 @@ export const SignIn: React.FC = () => {
                         size="lg"
                         isLoading={isLoading}
                     >
-                        Sign In
+                        Login Account
                     </Button>
                 </form>
 
                 <div className="auth-footer">
                     <p>
                         Don't have an account?{' '}
-                        <Link to="/signup">Sign Up</Link>
+                        <Link to="/signup">SIGN UP</Link>
                     </p>
                 </div>
             </div>
         </div>
     );
 };
+

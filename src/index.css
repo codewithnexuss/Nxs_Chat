@@ -1,69 +1,72 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 /* ============================================
-   NXS Chat Design System - V2 (Sky Blue)
-   Theme: Sky Blue (Professional), White, Black
+   NXS Chat Design System - V3 (Premium Vibe)
+   Theme: Indigo & Pink (Modern, Sleek)
    ============================================ */
 
 :root {
   /* Branding Colors */
-  --primary: #0ea5e9;
-  /* Sky Blue 500 */
-  --primary-light: #38bdf8;
-  /* Sky Blue 400 */
-  --primary-dark: #0284c7;
-  /* Sky Blue 600 */
-  --primary-hover: #0369a1;
-  /* Sky Blue 700 */
+  --primary: #6366F1;
+  /* Indigo */
+  --primary-dark: #4F46E5;
+  --secondary: #FFFFFF;
+  --accent: #EC4899;
+  /* Pink */
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+  --info: #3B82F6;
 
-  --white: #ffffff;
-  --black: #020617;
-  /* Darker Slate for deep black look */
-
-  /* Neutral Palette - Adjusted for Sky Blue harmony */
-  --gray-50: #f8fafc;
-  --gray-100: #f1f5f9;
-  --gray-200: #e2e8f0;
-  --gray-300: #cbd5e1;
-  --gray-400: #94a3b8;
-  --gray-500: #64748b;
-  --gray-600: #475569;
-  --gray-700: #334155;
-  --gray-800: #1e293b;
-  --gray-900: #0f172a;
-
-  /* Semantic Colors */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #0ea5e9;
+  /* Neutral Palette */
+  --gray-50: #F9FAFB;
+  --gray-100: #F3F4F6;
+  --gray-200: #E5E7EB;
+  --gray-300: #D1D5DB;
+  --gray-400: #9CA3AF;
+  --gray-500: #6B7280;
+  --gray-600: #4B5563;
+  --gray-700: #374151;
+  --gray-800: #1F2937;
+  --gray-900: #111827;
 
   /* Light Mode (Default) */
-  --bg-primary: var(--white);
-  --bg-secondary: #f0f9ff;
-  /* Very light sky tint */
-  --bg-tertiary: #e0f2fe;
-  --text-primary: var(--gray-900);
-  --text-secondary: var(--gray-600);
-  --text-tertiary: var(--gray-400);
-  --border-color: #bae6fd;
-  /* Light sky border */
-  --shadow-color: rgba(14, 165, 233, 0.1);
-  --divider-color: #f1f5f9;
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F9FAFB;
+  --bg-tertiary: #F3F4F6;
+  --bg-chat: #F3F4F6;
+  --bg-message-sent: var(--primary);
+  --bg-message-received: #FFFFFF;
 
-  /* Button Shape: Mixed rectangle-square */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  /* Professional square-ish */
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-full: 9999px;
+  --text-primary: #111827;
+  --text-secondary: #6B7280;
+  --text-tertiary: #9CA3AF;
+  --text-on-primary: #FFFFFF;
+
+  --border-light: #E5E7EB;
+  --border-dark: #D1D5DB;
+  --border-color: var(--border-light);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  --shadow-color: rgba(99, 102, 241, 0.1);
 
   /* Message Colors */
-  --msg-sent-bg: var(--primary);
-  --msg-sent-text: var(--white);
-  --msg-received-bg: #f1f5f9;
+  --msg-sent-bg: var(--bg-message-sent);
+  --msg-sent-text: var(--text-on-primary);
+  --msg-received-bg: var(--bg-message-received);
   --msg-received-text: var(--text-primary);
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -74,40 +77,56 @@
   --spacing-2xl: 3.5rem;
 
   /* Typography */
-  --font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
   --font-size-2xl: 1.5rem;
-  --font-size-3xl: 2rem;
+  --font-size-3xl: 1.875rem;
 
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 
   /* Layout */
-  --sidebar-width: 280px;
+  --sidebar-width: 80px;
+  /* Slim sidebar for icon-only look */
+  --sidebar-expanded-width: 260px;
   --bottom-nav-height: 68px;
-  --header-height: 64px;
+  --header-height: 72px;
 }
 
 /* Dark Mode Overhaul */
 .dark {
-  --bg-primary: #020617;
-  /* True Dark Black/Blue */
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-tertiary: #64748b;
-  --border-color: #1e293b;
-  --shadow-color: rgba(0, 0, 0, 0.5);
-  --divider-color: #1e293b;
+  --primary: #6366F1;
+  --primary-dark: #4F46E5;
+  --secondary: #111827;
+  --accent: #EC4899;
 
-  --msg-received-bg: #1e293b;
-  --msg-received-text: #f8fafc;
+  --bg-primary: #111827;
+  --bg-secondary: #1F2937;
+  --bg-tertiary: #374151;
+  --bg-chat: #111827;
+  --bg-message-sent: var(--primary);
+  --bg-message-received: #1F2937;
+
+  --text-primary: #F9FAFB;
+  --text-secondary: #9CA3AF;
+  --text-tertiary: #6B7280;
+  --text-on-primary: #FFFFFF;
+
+  --border-light: #374151;
+  --border-dark: #1F2937;
+  --border-color: var(--border-light);
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+  --msg-received-bg: var(--bg-message-received);
+  --msg-received-text: var(--text-primary);
 }
 
 

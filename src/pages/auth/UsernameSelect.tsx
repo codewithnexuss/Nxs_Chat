@@ -32,17 +32,23 @@ export const UsernameSelect: React.FC = () => {
                 return;
             }
 
-            setIsChecking(true);
             try {
-                const { data } = await supabase
+                const { data, error } = await supabase
                     .from('users')
                     .select('username')
                     .eq('username', username.toLowerCase())
-                    .single();
+                    .maybeSingle();
+
+                if (error) {
+                    console.error('Error checking username:', error);
+                    setIsAvailable(null); // Error occurred, we don't know
+                    return;
+                }
 
                 setIsAvailable(!data);
             } catch (err) {
-                setIsAvailable(true); // No match found means available
+                console.error('Catch error checking username:', err);
+                setIsAvailable(null);
             } finally {
                 setIsChecking(false);
             }
@@ -54,7 +60,8 @@ export const UsernameSelect: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!isAvailable || !signupData) return;
+        // Allow if available OR if we are just completing a profile for an existing session
+        if ((!isAvailable && !session) || (!signupData && !session)) return;
 
         setIsLoading(true);
         setError('');
@@ -68,13 +75,18 @@ export const UsernameSelect: React.FC = () => {
 
             if (signupData) {
                 const data = JSON.parse(signupData);
+                console.log('UsernameSelect: Attempting signUp for:', data.email);
+
                 // Create Supabase Auth account
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email: data.email,
                     password: data.password,
                 });
 
-                if (authError) throw authError;
+                if (authError) {
+                    console.error('UsernameSelect: signUp error:', authError);
+                    throw authError;
+                }
                 if (!authData.user) throw new Error('Failed to create account');
 
                 userId = authData.user.id;
@@ -84,38 +96,48 @@ export const UsernameSelect: React.FC = () => {
                 gender = data.gender;
 
                 if (authData.session) {
+                    console.log('UsernameSelect: Session established immediately');
                     setSession({
                         access_token: authData.session.access_token,
                         user: { id: authData.user.id, email: authData.user.email! }
                     });
                 }
             } else if (session) {
+                console.log('UsernameSelect: Completing profile for existing session:', session.user.id);
                 // Already authenticated but missing profile
                 userId = session.user.id;
                 email = session.user.email;
                 // Since we don't have signupData, we'll use fallbacks or prompt for info
-                // But generally users coming here via "Complete Setup" might need these.
-                // For now, let's use the email and a temporary name.
                 fullName = email.split('@')[0];
                 dob = new Date().toISOString().split('T')[0];
                 gender = 'other';
             } else {
-                throw new Error('No registration data found');
+                throw new Error('No registration data found. Please try signing up again.');
             }
 
-            // Create user profile
+            console.log('UsernameSelect: Creating/Updating profile for:', userId);
+
+            // Create or update user profile using upsert to prevent "duplicate" or "rows" errors
             const { error: profileError } = await supabase
                 .from('users')
-                .insert({
+                .upsert({
                     id: userId,
                     email: email,
                     full_name: fullName,
                     username: username.toLowerCase(),
                     date_of_birth: dob,
                     gender: gender,
-                } as any);
+                    updated_at: new Date().toISOString(),
+                    is_online: true,
+                    last_seen: new Date().toISOString()
+                }, { onConflict: 'id' } as any);
 
-            if (profileError) throw profileError;
+            if (profileError) {
+                console.error('UsernameSelect: Profile creation error:', profileError);
+                throw profileError;
+            }
+
+            console.log('UsernameSelect: Profile created successfully');
 
             // Clear session storage
             sessionStorage.removeItem('signupData');
@@ -125,6 +147,7 @@ export const UsernameSelect: React.FC = () => {
             navigate('/home');
 
         } catch (err: any) {
+            console.error('UsernameSelect: Caught error:', err);
             setError(err.message || 'An error occurred during registration');
         } finally {
             setIsLoading(false);

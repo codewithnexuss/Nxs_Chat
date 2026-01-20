@@ -94,7 +94,6 @@ function App() {
       async (event, session) => {
         console.log(`App: auth event: ${event}`, session ? 'session found' : 'no session');
 
-        // We only handle events that would change the state after initial load
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           if (session?.user) {
             setSession({
@@ -110,7 +109,7 @@ function App() {
       }
     );
 
-    // Safety timeout: guaranteed to stop loading after 8 seconds if things hang
+    // Safety timeout
     const safetyTimer = setTimeout(() => {
       const state = useAuthStore.getState();
       if (state.isLoading) {
@@ -124,6 +123,75 @@ function App() {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Separate effect for presence tracking
+  useEffect(() => {
+    const currentUser = useAuthStore.getState().user;
+    if (!currentUser) return;
+
+    console.log('App: Setting up presence for:', currentUser.id);
+
+    const channel = supabase.channel('online-users', {
+      config: {
+        presence: {
+          key: currentUser.id,
+        },
+      },
+    });
+
+    const updateStatus = async (isOnline: boolean) => {
+      try {
+        await supabase
+          .from('users')
+          .update({
+            is_online: isOnline,
+            last_seen: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq('id', currentUser.id);
+      } catch (err) {
+        console.error('Error updating presence status:', err);
+      }
+    };
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        // Presence synced
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        console.log('User joined:', key, newPresences);
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        console.log('User left:', key, leftPresences);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            user_id: currentUser.id,
+            online_at: new Date().toISOString(),
+          });
+          await updateStatus(true);
+        }
+      });
+
+    // Update status to offline on tab close/unload
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        updateStatus(false);
+      } else {
+        updateStatus(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      console.log('App: Cleaning up presence');
+      updateStatus(false);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      supabase.removeChannel(channel);
+    };
+  }, [useAuthStore.getState().user?.id]);
 
   return (
     <BrowserRouter>
