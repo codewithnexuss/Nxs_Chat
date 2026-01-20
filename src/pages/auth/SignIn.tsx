@@ -51,7 +51,7 @@ export const SignIn: React.FC = () => {
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">
-                    <div className="auth-logo">
+                    <div className="auth-logo" style={{ display: 'flex', margin: '0 auto 16px auto' }}>
                         <MessageSquare size={32} />
                     </div>
                     <h1>Welcome Back</h1>

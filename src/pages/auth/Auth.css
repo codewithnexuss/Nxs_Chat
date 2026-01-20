@@ -36,13 +36,15 @@
 .auth-card {
     width: 100%;
     max-width: 480px;
-    background: var(--bg-primary);
+    background: rgba(30, 41, 59, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-radius: var(--radius-2xl);
-    box-shadow: var(--shadow-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     padding: var(--spacing-2xl);
     position: relative;
     z-index: 1;
-    border: 1px solid var(--border-light);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .dark .auth-card {
