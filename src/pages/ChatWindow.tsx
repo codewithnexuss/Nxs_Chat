@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Smile, ArrowLeft, MoreVertical, Ban, Trash2, ShieldAlert, Paperclip, FileText, Image as ImageIcon, Video as VideoIcon, Download, Pencil, Reply, X } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Ban, Trash2, ShieldAlert, Paperclip, FileText, Camera, Download, Pencil, Reply, X } from 'lucide-react';
 import { Avatar } from '../components/common';
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
@@ -193,6 +193,7 @@ export const ChatWindow: React.FC = () => {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const cameraInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [otherUser, setOtherUser] = useState<User | null>(null);
@@ -617,6 +618,15 @@ export const ChatWindow: React.FC = () => {
                         ref={fileInputRef}
                         style={{ display: 'none' }}
                         onChange={handleFileUpload}
+                        multiple={false}
+                    />
+                    <input
+                        type="file"
+                        ref={cameraInputRef}
+                        accept="image/*,video/*"
+                        capture="environment"
+                        style={{ display: 'none' }}
+                        onChange={handleFileUpload}
                     />
 
                     <div className="relative">
@@ -629,17 +639,19 @@ export const ChatWindow: React.FC = () => {
                         </button>
                         {showAttachmentMenu && (
                             <div className="attachment-menu">
-                                <button className="attachment-menu-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
-                                    <ImageIcon size={20} />
-                                    <span>Image</span>
+                                <button className="attachment-menu-item" onClick={() => {
+                                    setShowAttachmentMenu(false);
+                                    if (cameraInputRef.current) cameraInputRef.current.click();
+                                }}>
+                                    <Camera size={20} />
+                                    <span>Camera</span>
                                 </button>
-                                <button className="attachment-menu-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
-                                    <VideoIcon size={20} />
-                                    <span>Video</span>
-                                </button>
-                                <button className="attachment-menu-item" onClick={() => { fileInputRef.current?.click(); setShowAttachmentMenu(false); }}>
+                                <button className="attachment-menu-item" onClick={() => {
+                                    setShowAttachmentMenu(false);
+                                    if (fileInputRef.current) fileInputRef.current.click();
+                                }}>
                                     <FileText size={20} />
-                                    <span>File</span>
+                                    <span>Document</span>
                                 </button>
                             </div>
                         )}
