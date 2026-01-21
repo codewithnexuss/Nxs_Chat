@@ -144,76 +144,76 @@
     color: var(--text-tertiary);
 }
 
+
 .message-bubble-wrapper {
     display: flex;
     flex-direction: column;
-    max-width: 85%;
-    margin-bottom: 2px;
-    /* Tighter spacing */
-    position: relative;
-    max-width: 80%;
+    max-width: 75%;
+    width: fit-content;
     margin-bottom: 2px;
     position: relative;
-    padding: 0 4px;
+    padding: 0;
     touch-action: pan-y;
 }
 
 @media (min-width: 768px) {
     .message-bubble-wrapper {
-        max-width: 65%;
-        /* Smaller on desktop too */
+        max-width: 50%;
+        /* Much smaller max-width on desktop for compact look */
     }
 }
 
 .message-bubble-wrapper.sent {
     align-self: flex-end;
+    align-items: flex-end;
+    /* Align internal content to right */
 }
 
 .message-bubble-wrapper.received {
     align-self: flex-start;
+    align-items: flex-start;
 }
 
 .message-bubble {
-    padding: 6px 10px;
-    /* Tighter padding like WhatsApp */
+    padding: 6px 9px;
+    /* Tighter padding */
     border-radius: 12px;
     position: relative;
     transition: background 0.2s ease;
     font-size: var(--font-size-sm);
-    line-height: 1.35;
+    line-height: 1.3;
+    /* Slightly tighter line height */
     box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
     word-wrap: break-word;
     overflow-wrap: break-word;
-    min-width: auto;
-    /* Ensure space for time */
+    min-width: 80px;
+    /* Minimum width to fit time nicely */
 }
 
 .message-bubble.has-media {
-    padding: 4px;
-    /* Small padding around image */
+    padding: 3px;
+    /* Minimal padding for media */
+    min-width: auto;
 }
 
 @media (min-width: 768px) {
     .message-bubble {
-        padding: 8px 10px;
+        padding: 6px 10px;
         font-size: var(--font-size-base);
     }
 }
 
 .message-bubble.sent {
-    background: #dcf8c6;
     background: var(--primary);
     color: var(--text-on-primary);
-    border-bottom-right-radius: 4px;
-    /* WhatsApp style tail hint */
+    border-bottom-right-radius: 2px;
     border-top-right-radius: 12px;
 }
 
 .message-bubble.received {
     background: var(--white);
     color: var(--text-primary);
-    border-bottom-left-radius: 4px;
-    /* WhatsApp style tail hint */
+    border-bottom-left-radius: 2px;
     border-top-left-radius: 12px;
 }
 
@@ -228,8 +228,9 @@
     border-radius: 8px;
     overflow: hidden;
     margin-bottom: 0;
-    /* No margin if overlay time is used */
     position: relative;
+    max-width: 260px;
+    /* Constrain image width */
 }
 
 .message-image {
@@ -237,7 +238,8 @@
     width: 100%;
     height: auto;
     object-fit: cover;
-    max-height: 280px;
+    max-height: 220px;
+    /* Constrain image height */
     border-radius: 8px;
 }
 
