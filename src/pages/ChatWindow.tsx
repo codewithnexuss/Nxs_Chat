@@ -32,6 +32,7 @@ const SwipeableMessage = ({
 }) => {
     const controls = useAnimation();
     const isSentByMe = msg.sender_id === user?.id;
+    const isMedia = msg.message_type === 'image' || msg.message_type === 'video';
 
     const bind = useDrag(({ active, movement: [x], cancel }) => {
         // Only allow swipe right
@@ -51,6 +52,11 @@ const SwipeableMessage = ({
         rubberband: true
     });
 
+    const formatTime = (dateStr: string) => {
+        const date = new Date(dateStr);
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
     return (
         <div
             id={`msg-${msg.id}`}
@@ -62,7 +68,7 @@ const SwipeableMessage = ({
         >
             <motion.div
                 animate={controls}
-                className={`message-bubble ${isSentByMe ? 'sent' : 'received'} ${msg.is_deleted ? 'deleted' : ''}`}
+                className={`message-bubble ${isSentByMe ? 'sent' : 'received'} ${msg.is_deleted ? 'deleted' : ''} ${isMedia ? 'has-media' : ''}`}
             >
                 {!isSentByMe && (
                     <div className="swipe-indicator">
@@ -89,6 +95,9 @@ const SwipeableMessage = ({
                             className="message-image"
                             onClick={() => window.open(msg.image_url!, '_blank')}
                         />
+                        <span className="message-time-overlay">
+                            {formatTime(msg.created_at)}
+                        </span>
                     </div>
                 )}
 
@@ -98,6 +107,9 @@ const SwipeableMessage = ({
                             <source src={msg.file_url} type="video/mp4" />
                             Your browser does not support the video tag.
                         </video>
+                        <span className="message-time-overlay">
+                            {formatTime(msg.created_at)}
+                        </span>
                     </div>
                 )}
 
@@ -123,14 +135,24 @@ const SwipeableMessage = ({
                     </div>
                 )}
 
-                {msg.message_type === 'text' && <p>{msg.content}</p>}
+                {msg.message_type === 'text' && (
+                    <div className="message-content-text">
+                        {msg.content}
+                        <span className="message-time">
+                            {formatTime(msg.created_at)}
+                            {new Date(msg.updated_at).getTime() > new Date(msg.created_at).getTime() + 2000 && !msg.is_deleted && " • Edited"}
+                        </span>
+                    </div>
+                )}
 
-                <div className="message-footer">
-                    <span className="message-time">
-                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                        {new Date(msg.updated_at).getTime() > new Date(msg.created_at).getTime() + 2000 && !msg.is_deleted && " • Edited"}
-                    </span>
-                </div>
+                {msg.message_type === 'file' && (
+                    <div className="message-footer">
+                        <span className="message-time">
+                            {formatTime(msg.created_at)}
+                        </span>
+                    </div>
+                )}
+
             </motion.div>
 
             {!msg.is_deleted && activeMessageMenu === msg.id && (
