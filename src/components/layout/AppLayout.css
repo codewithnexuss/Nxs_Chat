@@ -1,6 +1,60 @@
 .app-layout {
     display: flex;
     min-height: 100vh;
+    flex-direction: column;
+}
+
+.mobile-header {
+    display: none;
+    /* Hidden on desktop */
+}
+
+/* Mobile Header Styles */
+@media (max-width: 1023px) {
+    .app-layout {
+        display: block;
+        /* Stack layout on mobile */
+    }
+
+    .mobile-header {
+        display: flex;
+        align-items: center;
+        padding: 0 var(--spacing-md);
+        height: 60px;
+        background: rgba(30, 41, 59, 0.8);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        gap: var(--spacing-md);
+    }
+
+    .menu-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        cursor: pointer;
+        padding: 8px;
+        border-radius: var(--radius-md);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .menu-btn:active {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .mobile-app-title {
+        font-weight: 700;
+        font-size: 1.25rem;
+        background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
 }
 
 .main-content {
@@ -12,9 +66,16 @@
 }
 
 @media (min-width: 1024px) {
+    .app-layout {
+        flex-direction: row;
+        /* Sidebar | Content */
+    }
+
     .main-content {
         margin-left: var(--sidebar-width);
         padding-bottom: 0;
         background: var(--bg-primary);
+        width: calc(100% - var(--sidebar-width));
+        /* Ensure content takes remaining width */
     }
 }

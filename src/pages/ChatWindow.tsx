@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Send, Smile, ArrowLeft, MoreVertical, Ban, Trash2, ShieldAlert, Paperclip, FileText, Image as ImageIcon, Video as VideoIcon, Download, X as CloseIcon, Pencil, Reply, X } from 'lucide-react';
+import { Send, Smile, ArrowLeft, MoreVertical, Ban, Trash2, ShieldAlert, Paperclip, FileText, Image as ImageIcon, Video as VideoIcon, Download, Pencil, Reply, X } from 'lucide-react';
 import { Avatar } from '../components/common';
 import { useChatStore } from '../store/chatStore';
 import { useAuthStore } from '../store/authStore';
@@ -8,8 +8,153 @@ import { useThemeStore } from '../store/themeStore';
 import { supabase } from '../lib/supabase';
 import { formatDistanceToNow } from 'date-fns';
 import EmojiPicker, { type EmojiClickData, Theme as EmojiTheme } from 'emoji-picker-react';
+import { useDrag } from '@use-gesture/react';
+import { motion, useAnimation } from 'framer-motion';
 import type { User, MessageWithSender } from '../types';
 import './ChatWindow.css';
+
+const SwipeableMessage = ({
+    msg,
+    user,
+    onSwipeReply,
+    onEdit,
+    onDelete,
+    activeMessageMenu,
+    setActiveMessageMenu
+}: {
+    msg: MessageWithSender;
+    user: User | null;
+    onSwipeReply: (msg: MessageWithSender) => void;
+    onEdit: (msg: MessageWithSender) => void;
+    onDelete: (msgId: string) => void;
+    activeMessageMenu: string | null;
+    setActiveMessageMenu: (id: string | null) => void;
+}) => {
+    const controls = useAnimation();
+    const isSentByMe = msg.sender_id === user?.id;
+
+    const bind = useDrag(({ active, movement: [x], cancel }) => {
+        // Only allow swipe right
+        if (x < 0) return;
+
+        // Trigger threshold
+        if (active && x > 50) {
+            onSwipeReply(msg);
+            cancel(); // Stop dragging
+        }
+
+        controls.start({ x: active ? x : 0, transition: { type: 'spring', stiffness: 500, damping: 30 } });
+    }, {
+        axis: 'x',
+        filterTaps: true,
+        from: () => [0, 0],
+        rubberband: true
+    });
+
+    return (
+        <div
+            id={`msg-${msg.id}`}
+            className={`message-bubble-wrapper ${isSentByMe ? 'sent' : 'received'}`}
+            onMouseEnter={() => setActiveMessageMenu(msg.id)}
+            onMouseLeave={() => setActiveMessageMenu(null)}
+            {...(isSentByMe ? {} : bind()) as any}
+            style={{ touchAction: 'pan-y' }}
+        >
+            <motion.div
+                animate={controls}
+                className={`message-bubble ${isSentByMe ? 'sent' : 'received'} ${msg.is_deleted ? 'deleted' : ''}`}
+            >
+                {!isSentByMe && (
+                    <div className="swipe-indicator">
+                        <Reply size={16} />
+                    </div>
+                )}
+
+                {msg.reply_to && !msg.is_deleted && (
+                    <div className="message-reply-preview" onClick={(e) => {
+                        e.stopPropagation();
+                        const el = document.getElementById(`msg-${msg.parent_id}`);
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}>
+                        <span className="reply-user">{msg.reply_to.sender?.full_name}</span>
+                        <p className="reply-content">{msg.reply_to.content}</p>
+                    </div>
+                )}
+
+                {msg.message_type === 'image' && msg.image_url && !msg.is_deleted && (
+                    <div className="message-image-container">
+                        <img
+                            src={msg.image_url}
+                            alt="Sent image"
+                            className="message-image"
+                            onClick={() => window.open(msg.image_url!, '_blank')}
+                        />
+                    </div>
+                )}
+
+                {msg.message_type === 'video' && msg.file_url && !msg.is_deleted && (
+                    <div className="message-video-container">
+                        <video controls className="message-video">
+                            <source src={msg.file_url} type="video/mp4" />
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                )}
+
+                {msg.message_type === 'file' && msg.file_url && !msg.is_deleted && (
+                    <div className="message-file-container">
+                        <div className="message-file-info">
+                            <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                                <FileText size={20} />
+                            </div>
+                            <div className="message-file-details">
+                                <span className="message-file-name">{msg.content}</span>
+                            </div>
+                        </div>
+                        <a
+                            href={msg.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2 hover:bg-black/5 rounded-full transition-colors text-primary"
+                            download
+                        >
+                            <Download size={18} />
+                        </a>
+                    </div>
+                )}
+
+                {msg.message_type === 'text' && <p>{msg.content}</p>}
+
+                <div className="message-footer">
+                    <span className="message-time">
+                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                        {new Date(msg.updated_at).getTime() > new Date(msg.created_at).getTime() + 2000 && !msg.is_deleted && " • Edited"}
+                    </span>
+                </div>
+            </motion.div>
+
+            {!msg.is_deleted && activeMessageMenu === msg.id && (
+                <div className={`message-actions-overlay visible`}>
+
+                    {isSentByMe && msg.message_type === 'text' && (
+                        <button className="action-btn" onClick={() => onEdit(msg)} title="Edit">
+                            <Pencil size={18} />
+                        </button>
+                    )}
+                    {isSentByMe && (
+                        <button className="action-btn danger" onClick={() => onDelete(msg.id)} title="Delete">
+                            <Trash2 size={18} />
+                        </button>
+                    )}
+                    <button className="action-btn" onClick={() => onSwipeReply(msg)} title="Reply">
+                        <Reply size={18} />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 
 export const ChatWindow: React.FC = () => {
     const { chatId } = useParams<{ chatId: string }>();
@@ -27,6 +172,7 @@ export const ChatWindow: React.FC = () => {
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [otherUser, setOtherUser] = useState<User | null>(null);
     const [isBlocked, setIsBlocked] = useState(false);
     const [showMenu, setShowMenu] = useState(false);
@@ -35,6 +181,14 @@ export const ChatWindow: React.FC = () => {
     const [replyingTo, setReplyingTo] = useState<MessageWithSender | null>(null);
     const [editingMessage, setEditingMessage] = useState<MessageWithSender | null>(null);
     const [activeMessageMenu, setActiveMessageMenu] = useState<string | null>(null);
+
+    // Auto-resize textarea
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'; // Reset height
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+        }
+    }, [newMessage]);
 
     useEffect(() => {
         if (chatId) {
@@ -183,7 +337,7 @@ export const ChatWindow: React.FC = () => {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
         return () => clearTimeout(timer);
-    }, [messages]);
+    }, [messages.length, replyingTo]); // added replyingTo to scroll if needed, mainly layout shift
 
     const handleSend = async () => {
         if (!newMessage.trim() || !chatId || !user?.id) return;
@@ -199,6 +353,8 @@ export const ChatWindow: React.FC = () => {
             }
             setNewMessage('');
             setShowEmojiPicker(false);
+            // Reset height after send
+            if (textareaRef.current) textareaRef.current.style.height = 'auto';
         } catch (err) {
             console.error('Error sending/editing message:', err);
         } finally {
@@ -210,6 +366,8 @@ export const ChatWindow: React.FC = () => {
         setReplyingTo(msg);
         setEditingMessage(null);
         setActiveMessageMenu(null);
+        // Focus input
+        setTimeout(() => textareaRef.current?.focus(), 100);
     };
 
     const startEdit = (msg: MessageWithSender) => {
@@ -218,6 +376,7 @@ export const ChatWindow: React.FC = () => {
         setReplyingTo(null);
         setNewMessage(msg.content);
         setActiveMessageMenu(null);
+        setTimeout(() => textareaRef.current?.focus(), 100);
     };
 
     const handleDelete = async (msgId: string) => {
@@ -318,7 +477,8 @@ export const ChatWindow: React.FC = () => {
 
     const handleEmojiClick = (emojiData: EmojiClickData) => {
         setNewMessage(prev => prev + emojiData.emoji);
-        setShowEmojiPicker(false);
+        // Do not close emoji picker immediately? User preference usually to keep open for multiple
+        // setShowEmojiPicker(false); 
     };
 
     return (
@@ -380,94 +540,16 @@ export const ChatWindow: React.FC = () => {
                     </div>
                 ) : (
                     messages.map((msg) => (
-                        <div
+                        <SwipeableMessage
                             key={msg.id}
-                            id={`msg-${msg.id}`}
-                            className={`message-bubble-wrapper ${msg.sender_id === user?.id ? 'sent' : 'received'}`}
-                            onMouseEnter={() => setActiveMessageMenu(msg.id)}
-                            onMouseLeave={() => setActiveMessageMenu(null)}
-                        >
-                            <div className={`message-bubble ${msg.sender_id === user?.id ? 'sent' : 'received'} ${msg.is_deleted ? 'deleted' : ''}`}>
-                                {msg.reply_to && !msg.is_deleted && (
-                                    <div className="message-reply-preview" onClick={() => {
-                                        const el = document.getElementById(`msg-${msg.parent_id}`);
-                                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }}>
-                                        <span className="reply-user">{msg.reply_to.sender?.full_name}</span>
-                                        <p className="reply-content">{msg.reply_to.content}</p>
-                                    </div>
-                                )}
-
-                                {msg.message_type === 'image' && msg.image_url && !msg.is_deleted && (
-                                    <div className="message-image-container">
-                                        <img
-                                            src={msg.image_url}
-                                            alt="Sent image"
-                                            className="message-image"
-                                            onClick={() => window.open(msg.image_url!, '_blank')}
-                                        />
-                                    </div>
-                                )}
-
-                                {msg.message_type === 'video' && msg.file_url && !msg.is_deleted && (
-                                    <div className="message-video-container">
-                                        <video controls className="message-video">
-                                            <source src={msg.file_url} type="video/mp4" />
-                                            Your browser does not support the video tag.
-                                        </video>
-                                    </div>
-                                )}
-
-                                {msg.message_type === 'file' && msg.file_url && !msg.is_deleted && (
-                                    <div className="message-file-container">
-                                        <div className="message-file-info">
-                                            <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                                                <FileText size={20} />
-                                            </div>
-                                            <div className="message-file-details">
-                                                <span className="message-file-name">{msg.content}</span>
-                                            </div>
-                                        </div>
-                                        <a
-                                            href={msg.file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="p-2 hover:bg-black/5 rounded-full transition-colors text-primary"
-                                            download
-                                        >
-                                            <Download size={18} />
-                                        </a>
-                                    </div>
-                                )}
-
-                                {msg.message_type === 'text' && <p>{msg.content}</p>}
-
-                                <div className="message-footer">
-                                    <span className="message-time">
-                                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                                        {new Date(msg.updated_at).getTime() > new Date(msg.created_at).getTime() + 2000 && !msg.is_deleted && " • Edited"}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {!msg.is_deleted && (
-                                <div className={`message-actions-overlay ${activeMessageMenu === msg.id ? 'visible' : ''}`}>
-                                    <button className="action-btn" onClick={() => startReply(msg)} title="Reply">
-                                        <Reply size={18} />
-                                    </button>
-                                    {msg.sender_id === user?.id && msg.message_type === 'text' && (
-                                        <button className="action-btn" onClick={() => startEdit(msg)} title="Edit">
-                                            <Pencil size={18} />
-                                        </button>
-                                    )}
-                                    {msg.sender_id === user?.id && (
-                                        <button className="action-btn danger" onClick={() => handleDelete(msg.id)} title="Delete">
-                                            <Trash2 size={18} />
-                                        </button>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                            msg={msg}
+                            user={user}
+                            onSwipeReply={startReply}
+                            onEdit={startEdit}
+                            onDelete={handleDelete}
+                            activeMessageMenu={activeMessageMenu}
+                            setActiveMessageMenu={setActiveMessageMenu}
+                        />
                     ))
                 )}
                 {isBlocked && (
@@ -486,7 +568,7 @@ export const ChatWindow: React.FC = () => {
                             <span>Replying to {replyingTo.sender?.full_name}</span>
                             <p>{replyingTo.content}</p>
                         </div>
-                        <button className="logout-btn" style={{ width: 32, height: 32 }} onClick={() => setReplyingTo(null)}>
+                        <button className="input-action-btn" style={{ width: 32, height: 32 }} onClick={() => setReplyingTo(null)}>
                             <X size={16} />
                         </button>
                     </div>
@@ -498,7 +580,7 @@ export const ChatWindow: React.FC = () => {
                             <span>Editing message</span>
                             <p>{editingMessage.content}</p>
                         </div>
-                        <button className="logout-btn" style={{ width: 32, height: 32 }} onClick={() => {
+                        <button className="input-action-btn" style={{ width: 32, height: 32 }} onClick={() => {
                             setEditingMessage(null);
                             setNewMessage('');
                         }}>
@@ -517,8 +599,7 @@ export const ChatWindow: React.FC = () => {
 
                     <div className="relative">
                         <button
-                            className="logout-btn"
-                            style={{ width: 44, height: 44 }}
+                            className="input-action-btn"
                             disabled={isBlocked || isUploading}
                             onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
                         >
@@ -544,20 +625,14 @@ export const ChatWindow: React.FC = () => {
 
                     <div className="relative">
                         <button
-                            className="logout-btn"
-                            style={{ width: 44, height: 44 }}
+                            className="input-action-btn"
                             disabled={isBlocked || isUploading}
                             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                         >
                             <Smile size={22} className={showEmojiPicker ? 'text-primary' : ''} />
                         </button>
                         {showEmojiPicker && (
-                            <div className="emoji-picker-container" style={{ position: 'absolute', bottom: '100%', left: 0, zIndex: 1000, marginBottom: 12 }}>
-                                <div className="emoji-picker-header">
-                                    <button className="logout-btn" style={{ width: 32, height: 32 }} onClick={() => setShowEmojiPicker(false)}>
-                                        <CloseIcon size={18} />
-                                    </button>
-                                </div>
+                            <div className="emoji-picker-container">
                                 <EmojiPicker
                                     onEmojiClick={handleEmojiClick}
                                     theme={mode === 'dark' ? EmojiTheme.DARK : EmojiTheme.LIGHT}
@@ -567,30 +642,29 @@ export const ChatWindow: React.FC = () => {
                         )}
                     </div>
 
-                    <input
-                        type="text"
-                        className="message-input"
-                        placeholder={
-                            isBlocked
-                                ? "You cannot send messages to a blocked user"
-                                : isUploading
-                                    ? "Uploading file..."
-                                    : "Type a message..."
-                        }
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        disabled={isBlocked || isUploading}
-                    />
+                    <div className="input-wrapper">
+                        <textarea
+                            ref={textareaRef}
+                            className="message-input"
+                            placeholder={
+                                isBlocked
+                                    ? "You cannot send messages to a blocked user"
+                                    : isUploading
+                                        ? "Uploading file..."
+                                        : "Type a message..."
+                            }
+                            value={newMessage}
+                            onChange={(e) => {
+                                setNewMessage(e.target.value);
+                            }}
+                            onKeyDown={handleKeyPress}
+                            disabled={isBlocked || isUploading}
+                            rows={1}
+                        />
+                    </div>
 
                     <button
-                        className={`logout-btn ${newMessage.trim() ? 'active' : ''}`}
-                        style={{
-                            width: 44,
-                            height: 44,
-                            background: newMessage.trim() ? 'var(--primary)' : 'transparent',
-                            color: newMessage.trim() ? 'var(--text-on-primary)' : 'var(--text-secondary)'
-                        }}
+                        className={`input-action-btn send-btn ${newMessage.trim() ? 'active' : ''}`}
                         onClick={handleSend}
                         disabled={!newMessage.trim() || isSending || isBlocked || isUploading}
                     >

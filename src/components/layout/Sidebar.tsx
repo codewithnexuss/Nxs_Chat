@@ -12,45 +12,63 @@ const navItems = [
     { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+    isOpen?: boolean;
+    onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const { user, signOut } = useAuthStore();
 
     return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
-                <div className="sidebar-logo-icon">
-                    <MessageSquare size={24} />
-                </div>
-            </div>
+        <>
+            {/* Mobile Overlay */}
+            <div
+                className={`sidebar-overlay ${isOpen ? 'visible' : ''}`}
+                onClick={onClose}
+            />
 
-            <nav className="sidebar-nav">
-                {navItems.map((item) => (
-                    <NavLink
-                        key={item.path}
-                        to={item.path}
-                        className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-                        title={item.label}
-                    >
-                        <item.icon size={22} />
-                        <span>{item.label}</span>
-                    </NavLink>
-                ))}
-            </nav>
-
-            <div className="sidebar-footer">
-                <div className="sidebar-user-trigger" title={user?.full_name}>
-                    <Avatar
-                        src={user?.profile_picture}
-                        name={user?.full_name || 'User'}
-                        size="md"
-                        isOnline
-                    />
+            <aside className={`sidebar ${isOpen ? 'mobile-open' : ''}`}>
+                <div className="sidebar-header">
+                    <div className="sidebar-logo-icon">
+                        <MessageSquare size={24} />
+                    </div>
                 </div>
-                <button className="logout-btn" onClick={signOut} title="Logout">
-                    <LogOut size={20} />
-                </button>
-            </div>
-        </aside>
+
+                <nav className="sidebar-nav">
+                    {navItems.map((item) => (
+                        <NavLink
+                            key={item.path}
+                            to={item.path}
+                            className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                            title={item.label}
+                            onClick={onClose}
+                        >
+                            <item.icon size={22} />
+                            <span>{item.label}</span>
+                        </NavLink>
+                    ))}
+                </nav>
+
+                <div className="sidebar-footer">
+                    <div className="sidebar-user-trigger" title={user?.full_name}>
+                        <Avatar
+                            src={user?.profile_picture}
+                            name={user?.full_name || 'User'}
+                            size="md"
+                            isOnline
+                        />
+                        <div className="sidebar-user-info">
+                            <span className="user-name">{user?.full_name || 'User'}</span>
+                            <span className="user-status">Online</span>
+                        </div>
+                    </div>
+                    <button className="logout-btn" onClick={signOut} title="Logout">
+                        <LogOut size={20} />
+                    </button>
+                </div>
+            </aside>
+        </>
     );
 };
 
